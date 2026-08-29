@@ -5,7 +5,6 @@ import { on, removeRouterListeners, send } from "@/utils/ipcUtils";
 import { useClipboard, useDebounceFn } from "@vueuse/core";
 import { ElMessage, FormInstance, FormRules } from "element-plus";
 import _ from "lodash";
-import path from "path";
 import {
   computed,
   defineComponent,
@@ -15,7 +14,7 @@ import {
   ref
 } from "vue";
 import { useI18n } from "vue-i18n";
-import { ipcRouters } from "../../../electron/core/IpcRouter";
+import { ipcRouters } from "@/ipc/router";
 import commonIps from "./commonIp.json";
 
 defineComponent({
@@ -603,7 +602,9 @@ const handleRandomProxyName = () => {
 };
 
 const normalizePath = (filePath: string) => {
-  return path.normalize(filePath).replace(/\\/g, "/");
+  // normalize backslashes to forward slashes (browser-safe; the backend
+  // returns native paths)
+  return (filePath || "").replace(/\\/g, "/");
 };
 
 const handleSelectFile = (type: number, ext: string[]) => {

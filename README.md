@@ -55,6 +55,42 @@
 
 Run command: `sudo xattr -cr Frpc-Desktop.app`
 
+## Development
+
+> **Note**: Frpc-Desktop is now built on [Tauri 2](https://tauri.app/) (Rust +
+> WebView) instead of Electron. The renderer is still Vue 3 + TypeScript +
+> Vite.
+
+Prerequisites:
+
+- Node.js >= 22.12 and npm
+- [Rust](https://rustup.rs/) stable toolchain
+  - Windows: MSVC Build Tools (with C++ workload) and WebView2 (preinstalled on Win 10/11)
+  - macOS: Xcode Command Line Tools
+  - Linux: `libwebkit2gtk-4.1-dev`, `libappindicator3-dev`, `librsvg2-dev`, `patchelf`, `libgtk-3-dev`
+
+Commands:
+
+```sh
+npm ci
+npm run dev:tauri    # run the app in development mode (Vite + Tauri)
+npm run build        # type-check + build the renderer only
+npm run build:tauri  # build the renderer + bundle the desktop app
+npm run lint         # eslint
+```
+
+Rust validation (inside `src-tauri/`):
+
+```sh
+cargo check
+cargo clippy --all-targets -- -D warnings
+cargo test --locked
+```
+
+All user data (SQLite database, downloaded frp versions, logs) is stored in
+the platform app-data directory (`%APPDATA%\Frpc-Desktop` on Windows), fully
+compatible with the previous Electron versions.
+
 ## Milestones
 
 - 2026-05-21: Released v1.2.6 Added download proxy selection

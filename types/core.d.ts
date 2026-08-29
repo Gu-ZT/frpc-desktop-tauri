@@ -7,7 +7,6 @@ interface ApiResponse<T> {
 interface ControllerParam {
   // win: BrowserWindow;
   channel: string;
-  event: Electron.IpcMainEvent;
   args: any;
 }
 
@@ -17,14 +16,8 @@ interface ListenerParam {
   args: any[];
 }
 
-type IpcRouter = {
-  path: string;
-  controller: string;
-}
-
 type Listener = {
   channel: string;
-  listenerMethod: any;
 };
 
 enum IpcRouterKeys {
@@ -35,12 +28,3 @@ enum IpcRouterKeys {
   PROXY = "PROXY",
   SYSTEM = "SYSTEM",
 }
-
-type IpcRouters = Record<
-  IpcRouterKeys,
-  {
-    [method: string]: IpcRouter;
-  }
->;
-
-type Listeners = Record<string, Listener>;

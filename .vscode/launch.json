@@ -1,22 +1,28 @@
 {
-    // 使用 IntelliSense 了解相关属性。 
+    // 使用 IntelliSense 了解相关属性。
     // 悬停以查看现有属性的描述。
     // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-    
         {
             "type": "node-terminal",
-            "name": "dev",
+            "name": "dev (renderer only)",
             "request": "launch",
             "command": "npm run dev",
             "cwd": "${workspaceFolder}"
         },
         {
             "type": "node-terminal",
-            "name": "build electron",
+            "name": "dev:tauri",
             "request": "launch",
-            "command": "npm run build:electron",
+            "command": "npm run dev:tauri",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "node-terminal",
+            "name": "build tauri",
+            "request": "launch",
+            "command": "npm run build:tauri",
             "cwd": "${workspaceFolder}"
         }
     ]

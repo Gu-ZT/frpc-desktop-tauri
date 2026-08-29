@@ -50,6 +50,39 @@
 - [x] support multiple languages
 
 
+## 开发
+
+> **注意**：Frpc-Desktop 现已基于 [Tauri 2](https://tauri.app/)（Rust + WebView）构建，不再使用 Electron。前端仍然是 Vue 3 + TypeScript + Vite。
+
+前置要求：
+
+- Node.js >= 22.12 和 npm
+- [Rust](https://rustup.rs/) stable 工具链
+  - Windows：MSVC Build Tools（含 C++ 工作负载）与 WebView2（Win10/11 已内置）
+  - macOS：Xcode Command Line Tools
+  - Linux：`libwebkit2gtk-4.1-dev`、`libappindicator3-dev`、`librsvg2-dev`、`patchelf`、`libgtk-3-dev`
+
+常用命令：
+
+```sh
+npm ci
+npm run dev:tauri    # 开发模式运行（Vite + Tauri）
+npm run build        # 仅类型检查 + 构建前端
+npm run build:tauri  # 构建前端 + 打包桌面应用
+npm run lint         # eslint
+```
+
+Rust 侧校验（在 `src-tauri/` 目录下）：
+
+```sh
+cargo check
+cargo clippy --all-targets -- -D warnings
+cargo test --locked
+```
+
+所有用户数据（SQLite 数据库、已下载的 frp 版本、日志）存放在系统应用数据目录
+（Windows 为 `%APPDATA%\Frpc-Desktop`），与旧版 Electron 完全兼容，升级不丢失数据。
+
 ## 里程碑
 
 - 2026-05-21: 发布v1.2.6版本 增加下载代理选择

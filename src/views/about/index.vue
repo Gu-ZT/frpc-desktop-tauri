@@ -6,7 +6,7 @@ import { send } from "@/utils/ipcUtils";
 import { Icon } from "@iconify/vue";
 import { computed, defineComponent, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
-import { ipcRouters } from "../../../electron/core/IpcRouter";
+import { ipcRouters } from "@/ipc/router";
 import pkg from "../../../package.json";
 
 const frpcDesktopStore = useFrpcDesktopStore();

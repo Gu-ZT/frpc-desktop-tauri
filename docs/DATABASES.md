@@ -15,7 +15,7 @@
 
 ## 2. 当前持久化结构
 
-当前数据库目录为 Electron `app.getPath("userData")/db`，由 `BaseRepository` 创建以下文件：
+当前数据库目录为应用数据目录 `userData/db`（Windows 为 `%APPDATA%\Frpc-Desktop\db`，由 `PathUtils::get_data_base_storage_path()` 解析），由 `BaseRepository` 创建以下文件：
 
 | NeDB 文件 | 持久化对象 | 主键与访问特征 |
 | --- | --- | --- |
@@ -40,7 +40,7 @@ server（固定 id = "1"）
 ### 3.1 数据库文件
 
 - 文件名：`frpc-desktop.sqlite3`
-- 路径：`app.getPath("userData")/db/frpc-desktop.sqlite3`
+- 路径：`userData/db/frpc-desktop.sqlite3`（`PathUtils::get_database_file_path()`）
 - 一个应用实例只使用一个数据库连接管理组件；Repository 不应各自创建独立数据库文件。
 - 不手工修改数据库文件、`-wal` 文件或 `-shm` 文件。
 
@@ -59,7 +59,7 @@ PRAGMA busy_timeout = 5000;
 
 - `foreign_keys` 必须按连接开启；
 - WAL 提升异常退出后的恢复能力，并减少读写互相阻塞；
-- 当前 Electron 主进程是唯一数据库写入方，不允许 renderer 直接访问数据库；
+- 当前 Tauri Rust 后端是唯一数据库写入方，不允许 renderer 直接访问数据库；
 - 数据库关闭或备份时，需要同时正确处理 WAL checkpoint。
 
 ### 3.3 命名和类型
@@ -366,9 +366,9 @@ flowchart LR
 
 ## 7. 安全、备份与维护
 
-- 数据库仅由 Electron main process 访问，renderer 必须通过现有 IPC 路由调用；
+- 数据库仅由 Tauri Rust 后端访问，renderer 必须通过现有 IPC 命令调用；
 - main process 必须继续校验 renderer 传入的 ID、路径、端口、状态和下载参数；
-- 数据库目录与备份文件沿用 Electron userData 的用户级权限，不得扩大访问权限；
+- 数据库目录与备份文件沿用应用数据目录的用户级权限，不得扩大访问权限；
 - 日志只记录操作类型、记录 ID 和错误码，不记录 token、密码、secret key、代理 URL 或证书内容；
 - “重置全部配置”需要删除 SQLite 主文件及其 `-wal`、`-shm` 文件，或优先通过数据库连接执行事务性清空；
 - 在线备份优先使用 SQLite backup API；直接复制前必须 checkpoint 并关闭连接；
@@ -385,7 +385,7 @@ flowchart LR
 
 ## 9. 实施顺序建议
 
-1. 选定支持 Electron 当前 ABI、事务和参数绑定的 SQLite 驱动；
+1. 选定支持当前平台、事务和参数绑定的 SQLite 驱动（本项目使用 rusqlite bundled）；
 2. 新增单例数据库连接和版本化 migration runner；
 3. 实现应用配置 Repository，以及行记录与现有 TypeScript 类型之间的 mapper；
 4. 将现有 3 个 Repository 切换到 SQLite，并保持公共方法签名不变；

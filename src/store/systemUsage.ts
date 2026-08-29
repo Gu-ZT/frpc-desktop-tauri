@@ -1,6 +1,6 @@
 import { onListener } from "@/utils/ipcUtils";
 import { defineStore } from "pinia";
-import { ipcRouters, listeners } from "../../electron/core/IpcRouter";
+import { listeners } from "@/ipc/router";
 
 export const useSystemUsageStore = defineStore("systemUsage", {
   state: () => ({

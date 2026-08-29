@@ -2,7 +2,7 @@ import i18n from "@/lang";
 import { on, onListener, send } from "@/utils/ipcUtils";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { defineStore } from "pinia";
-import { ipcRouters, listeners } from "../../electron/core/IpcRouter";
+import { ipcRouters, listeners } from "@/ipc/router";
 import pkg from "../../package.json";
 
 export const useFrpcDesktopStore = defineStore("frpcDesktop", {

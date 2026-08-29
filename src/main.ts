@@ -12,6 +12,9 @@ import i18n from "./lang";
 import router from "./router";
 import { useSystemUsageStore } from "./store/systemUsage";
 import "./styles/index.scss";
+import { setupLoading } from "./utils/loading";
+
+const removeLoading = setupLoading();
 
 const pinia = createPinia();
 
@@ -39,5 +42,6 @@ app
     systemUsageStore.onListenerSystemUsage();
 
     postMessage({ payload: "removeLoading" }, "*");
+    removeLoading();
   })
   .then(r => {});
