@@ -7,7 +7,9 @@
 
 use std::fs;
 use std::path::Path;
-use std::process::{Command, Stdio};
+use std::process::Command;
+#[cfg(not(target_os = "macos"))]
+use std::process::Stdio;
 use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
