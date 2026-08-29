@@ -233,7 +233,7 @@ impl FrpcProcessService {
 
     /// Kill a Windows process tree (only compiled on Windows).
     #[cfg(target_os = "windows")]
-    fn terminate_windows_process(pid: u32) -> Result<(), BusinessError> {
+    fn terminate_process_tree(pid: u32) -> Result<(), BusinessError> {
         let output = Command::new("taskkill")
             .args(["/PID", &pid.to_string(), "/T", "/F"])
             .stdout(Stdio::null())
@@ -249,23 +249,19 @@ impl FrpcProcessService {
         }
     }
 
-    /// Kill a process tree (Windows taskkill; Unix: SIGTERM to the process).
-    #[cfg(not(target_os = "macos"))]
+    /// Kill a process tree on Unix (SIGTERM); only compiled on Linux.
+    #[cfg(all(unix, not(target_os = "macos")))]
     fn terminate_process_tree(pid: u32) -> Result<(), BusinessError> {
-        if cfg!(target_os = "windows") {
-            Self::terminate_windows_process(pid)
-        } else {
-            let output = Command::new("kill")
-                .args(["-TERM", &pid.to_string()])
-                .output()
-                .map_err(|e| BusinessError::internal(format!("kill failed: {e}")))?;
-            if !output.status.success() && Self::is_process_alive(pid) {
-                return Err(BusinessError::internal(format!(
-                    "kill failed for pid={pid}"
-                )));
-            }
-            Ok(())
+        let output = Command::new("kill")
+            .args(["-TERM", &pid.to_string()])
+            .output()
+            .map_err(|e| BusinessError::internal(format!("kill failed: {e}")))?;
+        if !output.status.success() && Self::is_process_alive(pid) {
+            return Err(BusinessError::internal(format!(
+                "kill failed for pid={pid}"
+            )));
         }
+        Ok(())
     }
 
     /// Read the last portion of the frpc log and detect a connection error.
