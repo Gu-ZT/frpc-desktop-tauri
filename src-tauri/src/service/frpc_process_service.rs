@@ -231,6 +231,8 @@ impl FrpcProcessService {
         }
     }
 
+    /// Kill a Windows process tree (only compiled on Windows).
+    #[cfg(target_os = "windows")]
     fn terminate_windows_process(pid: u32) -> Result<(), BusinessError> {
         let output = Command::new("taskkill")
             .args(["/PID", &pid.to_string(), "/T", "/F"])
@@ -247,6 +249,8 @@ impl FrpcProcessService {
         }
     }
 
+    /// Kill a process tree (Windows taskkill; Unix: SIGTERM to the process).
+    #[cfg(not(target_os = "macos"))]
     fn terminate_process_tree(pid: u32) -> Result<(), BusinessError> {
         if cfg!(target_os = "windows") {
             Self::terminate_windows_process(pid)
@@ -398,6 +402,9 @@ impl FrpcProcessService {
                 Instant::now().elapsed().as_millis() as i64,
                 Ordering::Relaxed,
             );
+            // macOS 分支是函数结尾（非 macOS 块被 cfg 移除），
+            // return 在 macOS 编译下看似多余，但非 macOS 编译时需要它跳出。
+            #[allow(clippy::needless_return)]
             return Ok(());
         }
 
@@ -528,6 +535,9 @@ impl FrpcProcessService {
                 )));
             }
             self.reset_process_state(pid);
+            // macOS 分支是函数结尾（非 macOS 块被 cfg 移除），
+            // return 在 macOS 编译下看似多余，但非 macOS 编译时需要它跳出。
+            #[allow(clippy::needless_return)]
             return Ok(());
         }
 
