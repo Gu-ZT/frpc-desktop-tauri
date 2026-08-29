@@ -176,12 +176,19 @@ impl<'a> NedbMigrationService<'a> {
         if !filename.exists() {
             return Ok(Vec::new());
         }
-        let content = fs::read_to_string(filename).map_err(|e| {
+        let raw = fs::read(filename).map_err(|e| {
             format!(
                 "NeDB migration failed while reading {}: {e}",
                 filename.display()
             )
         })?;
+        // strip UTF-8 BOM if present (some editors/tools add one)
+        let raw = if raw.starts_with(&[0xEF, 0xBB, 0xBF]) {
+            &raw[3..]
+        } else {
+            &raw[..]
+        };
+        let content = String::from_utf8_lossy(raw);
         let mut docs = Vec::new();
         for line in content.lines() {
             let trimmed = line.trim();
@@ -191,10 +198,13 @@ impl<'a> NedbMigrationService<'a> {
             match serde_json::from_str::<serde_json::Value>(trimmed) {
                 Ok(value) => docs.push(value),
                 Err(e) => {
-                    return Err(format!(
-                        "NeDB migration failed while parsing {}: {e}",
-                        filename.display()
-                    ));
+                    // The Electron `loadDatabase`/`find({})` also ignores lines
+                    // that are not valid JSON documents; a single bad line must
+                    // never abort the whole migration.
+                    Logger::warn(
+                        "NedbMigrationService",
+                        &format!("Skipping unparsable line in {}: {e}", filename.display()),
+                    );
                 }
             }
         }

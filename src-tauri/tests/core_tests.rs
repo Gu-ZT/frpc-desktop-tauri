@@ -376,6 +376,44 @@ fn nedb_line_parser_skips_metadata() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
+#[test]
+fn nedb_parser_tolerates_bom_and_bad_lines() {
+    let dir = std::env::temp_dir().join("frpc-nedb-bom-test");
+    std::fs::create_dir_all(&dir).unwrap();
+    let server_file = dir.join("server-v2.db");
+
+    // BOM + `$$$` metadata + one unparsable line + one valid doc.
+    // A single corrupt line must not abort the whole migration.
+    let mut content = vec![0xEF, 0xBB, 0xBF]; // UTF-8 BOM
+    content.extend_from_slice(
+        b"$$$ 1710000000000\t1710000000000\nthis is not json\n{\"serverAddr\":\"bom.example.com\",\"serverPort\":7000,\"auth\":{\"method\":\"token\",\"token\":\"bom-secret\"},\"log\":{\"to\":\"\",\"level\":\"info\",\"maxDays\":3,\"disablePrintColor\":false},\"transport\":{\"protocol\":\"tcp\"},\"system\":{\"launchAtStartup\":false,\"silentStartup\":false,\"autoConnectOnStartup\":false,\"language\":\"en-US\"}}\n",
+    );
+    std::fs::write(&server_file, &content).unwrap();
+
+    let db = open_in_memory().unwrap();
+    let app_config = AppConfigRepository::new(db.clone());
+    let server_repo = ServerRepository::new(db.clone(), app_config.clone());
+    let proxy_repo = ProxyRepository::new(db.clone());
+    let version_repo = VersionRepository::new(db.clone());
+
+    let svc = frpc_desktop_lib::db::nedb_migration::NedbMigrationService::new(
+        &app_config,
+        &server_repo,
+        &proxy_repo,
+        &version_repo,
+        dir.clone(),
+    );
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    rt.block_on(svc.migrate(&db))
+        .expect("migrate must tolerate BOM + bad lines");
+
+    let server = server_repo.find_by_id("1").unwrap().unwrap();
+    assert_eq!(server.server_addr, "bom.example.com");
+    assert_eq!(server.auth.token, "bom-secret");
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 // ------------------------------------------------------------------
 // Constants
 // ------------------------------------------------------------------
