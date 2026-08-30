@@ -53,9 +53,16 @@ export const onListener = (
   }
   const unlisteners = channelUnlisteners.get(listener.channel)!;
   if (unlisteners.length === 0) {
-    listen<ApiResponse>(listener.channel, event => {
-      const { bizCode, data } = event.payload;
-      if (bizCode === "A1000") {
+    listen<ApiResponse | any>(listener.channel, event => {
+      const payload = event.payload;
+      // Push events carry either a bare payload or an ApiResponse wrapper.
+      const data =
+        payload && typeof payload === "object" && "bizCode" in payload
+          ? payload.bizCode === "A1000"
+            ? payload.data
+            : undefined
+          : payload;
+      if (data !== undefined) {
         const handlers = channelHandlers.get(listener.channel);
         handlers?.forEach(handler => handler(data));
       }
