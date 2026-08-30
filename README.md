@@ -93,6 +93,7 @@ compatible with the previous Electron versions.
 
 ## Milestones
 
+- 2026-08-30: Released v2.0.0 Migrated from Electron to Tauri 2 (Rust + WebView)
 - 2026-05-21: Released v1.2.6 Added download proxy selection
 - 2026-03-26: Released v1.2.5 Fixed known bugs
 - 2025-09-10: Released v1.2.3 Fixed known bugs, Supports proxy protocol, Optimize performance

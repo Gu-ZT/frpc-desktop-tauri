@@ -135,7 +135,7 @@ fn init_state(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
 
     let system_service = SystemService::new();
     let server_service = ServerService::new(server_repo, proxy_repo.clone());
-    let git_hub_service = GitHubService::new("1.2.6");
+    let git_hub_service = GitHubService::new(env!("CARGO_PKG_VERSION"));
     let version_service = VersionService::new(
         version_repo,
         system_service.clone(),

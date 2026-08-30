@@ -195,7 +195,8 @@ impl VersionService {
         let client = reqwest::Client::builder()
             .user_agent(format!(
                 "frpc-desktop/{}",
-                std::env::var("FRPC_DESKTOP_VERSION").unwrap_or_else(|_| "1.2.6".into())
+                std::env::var("FRPC_DESKTOP_VERSION")
+                    .unwrap_or_else(|_| env!("CARGO_PKG_VERSION").into())
             ))
             .build()
             .map_err(|e| BusinessError::internal(format!("client build failed: {e}")))?;
