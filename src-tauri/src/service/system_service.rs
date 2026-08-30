@@ -207,14 +207,23 @@ impl SystemService {
     }
     /// Get local listening ports (netstat parsing, same as the Electron version).
     pub fn get_local_ports(&self) -> Result<Vec<crate::model::github::LocalPort>, String> {
-        let (command, is_win) = if cfg!(target_os = "windows") {
-            ("netstat -a -n".to_string(), true)
+        let (program, args, is_win) = if cfg!(target_os = "windows") {
+            ("netstat".to_string(), vec!["-a", "-n"], true)
         } else {
-            ("netstat -an | grep LISTEN".to_string(), false)
+            (
+                "sh".to_string(),
+                vec!["-c", "netstat -an | grep LISTEN"],
+                false,
+            )
         };
-        let output = Command::new("sh")
-            .arg("-c")
-            .arg(&command)
+        let mut cmd = Command::new(&program);
+        #[cfg(target_os = "windows")]
+        {
+            use std::os::windows::process::CommandExt;
+            cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+        }
+        let output = cmd
+            .args(&args)
             .output()
             .map_err(|e| format!("netstat failed: {e}"))?;
         let stdout = String::from_utf8_lossy(&output.stdout).to_string();

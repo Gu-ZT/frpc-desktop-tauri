@@ -10,6 +10,8 @@ const pathResolve = (dir: string): string => {
 // https://vitejs.dev/config/
 export default defineConfig(() => {
   return {
+    // Tauri 生产环境通过自定义协议加载页面，必须使用相对路径
+    base: "./",
     css: {
       preprocessorOptions: {
         scss: {

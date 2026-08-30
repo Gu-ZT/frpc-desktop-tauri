@@ -25,6 +25,22 @@ use crate::model::frpc::FrpcProcessStatus;
 use crate::service::server_service::ServerService;
 use crate::service::system_service::SystemService;
 
+/// `CREATE_NO_WINDOW` flag: prevents a console window from flashing for
+/// child processes on Windows (tasklist/taskkill/osascript etc).
+#[cfg(target_os = "windows")]
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
+/// Build a `Command` that never flashes a console window on Windows.
+fn hidden_command(program: &str) -> Command {
+    let mut cmd = Command::new(program);
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+    cmd
+}
+
 /// Fixed paths with no spaces so sudoers matching is unambiguous.
 #[cfg(target_os = "macos")]
 const MAC_LAUNCHER_PATH: &str = "/usr/local/bin/frpc-desktop-launcher";
@@ -123,7 +139,7 @@ impl FrpcProcessService {
             "FrpcProcessService.installMacHelper",
             "Installing privileged helper (one-time password prompt)",
         );
-        let output = Command::new("osascript")
+        let output = hidden_command("osascript")
             .arg("-e")
             .arg(format!(
                 "do shell script \"{install_cmd}\" with administrator privileges"
@@ -183,7 +199,7 @@ impl FrpcProcessService {
         };
         #[cfg(target_os = "windows")]
         {
-            let output = Command::new("tasklist")
+            let output = hidden_command("tasklist")
                 .args(["/FI", &format!("IMAGENAME eq {process_name}"), "/FO", "CSV"])
                 .output()
                 .ok()?;
@@ -204,7 +220,7 @@ impl FrpcProcessService {
         }
         #[cfg(not(target_os = "windows"))]
         {
-            let output = Command::new("pgrep")
+            let output = hidden_command("pgrep")
                 .arg("-x")
                 .arg(&process_name)
                 .output()
@@ -236,7 +252,7 @@ impl FrpcProcessService {
     /// Kill a Windows process tree (only compiled on Windows).
     #[cfg(target_os = "windows")]
     fn terminate_process_tree(pid: u32) -> Result<(), BusinessError> {
-        let output = Command::new("taskkill")
+        let output = hidden_command("taskkill")
             .args(["/PID", &pid.to_string(), "/T", "/F"])
             .stdout(Stdio::null())
             .stderr(Stdio::null())
@@ -254,7 +270,7 @@ impl FrpcProcessService {
     /// Kill a process tree on Unix (SIGTERM); only compiled on Linux.
     #[cfg(all(unix, not(target_os = "macos")))]
     fn terminate_process_tree(pid: u32) -> Result<(), BusinessError> {
-        let output = Command::new("kill")
+        let output = hidden_command("kill")
             .args(["-TERM", &pid.to_string()])
             .output()
             .map_err(|e| BusinessError::internal(format!("kill failed: {e}")))?;
@@ -378,7 +394,7 @@ impl FrpcProcessService {
             }
             let frpc_binary = frpc_binary_path.to_string_lossy().to_string();
             let config_path_str = config_path.to_string_lossy().to_string();
-            let output = Command::new("sudo")
+            let output = hidden_command("sudo")
                 .args([
                     "-n",
                     MAC_LAUNCHER_PATH,
@@ -411,7 +427,7 @@ impl FrpcProcessService {
             let binary = frpc_binary_path.to_string_lossy().to_string();
             let config = config_path.to_string_lossy().to_string();
             let cwd = version.local_path.clone().unwrap_or_default();
-            let mut child = Command::new(&binary)
+            let mut child = hidden_command(&binary)
                 .args(["-c", &config])
                 .current_dir(&cwd)
                 .stdout(Stdio::piped())
@@ -523,7 +539,7 @@ impl FrpcProcessService {
 
         #[cfg(target_os = "macos")]
         {
-            let output = Command::new("sudo")
+            let output = hidden_command("sudo")
                 .args(["-n", MAC_LAUNCHER_PATH, "stop", &pid.to_string()])
                 .output()
                 .map_err(|e| BusinessError::internal(format!("sudo stop failed: {e}")))?;
@@ -582,7 +598,7 @@ impl FrpcProcessService {
             .as_ref()
             .map(|p| Path::new(p).join(&frpc_filename))
             .ok_or_else(|| BusinessError::new(ResponseCode::NotFoundVersion))?;
-        let output = Command::new(&frpc_binary_path)
+        let output = hidden_command(&frpc_binary_path.to_string_lossy())
             .args(["reload", "-c", &config_path.to_string_lossy()])
             .current_dir(
                 version
