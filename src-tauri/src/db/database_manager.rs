@@ -1,13 +1,13 @@
 //! SQLite connection manager (ported from electron/database/DatabaseManager.ts).
 //!
 //! Uses rusqlite with the bundled SQLite. Migrations are embedded at compile
-//! time from `src-tauri/migrations/*.sql` (copied verbatim from the Electron
-//! repo) so no runtime resource path handling is needed.
+//! time via `include_str!` (copied verbatim from the Electron repo) so no
+//! runtime resource path handling is needed — the application is fully
+//! self-contained after install.
 //!
 //! The connection is shared across threads through `Arc<Mutex<Connection>>`
 //! (rusqlite Connection is Send but not Sync).
 
-use std::fs;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
@@ -27,9 +27,17 @@ pub fn sqlite_error(msg: &str) -> rusqlite::Error {
     )
 }
 
+/// Migration files embedded at compile time, sorted by version.
+/// Each entry is `(version, name, filename, sql)`.
+pub const MIGRATIONS: &[(i64, &str, &str, &str)] = &[(
+    1,
+    "initial_schema",
+    "001_initial_schema.sql",
+    include_str!("../../migrations/001_initial_schema.sql"),
+)];
+
 pub struct DatabaseManager {
     database_path: PathBuf,
-    migrations_path: PathBuf,
 }
 
 impl Default for DatabaseManager {
@@ -42,7 +50,6 @@ impl DatabaseManager {
     pub fn new() -> Self {
         Self {
             database_path: PathUtils::get_database_file_path(),
-            migrations_path: PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/migrations")),
         }
     }
     /// Open the database, run migrations and return a shared handle.
@@ -121,42 +128,22 @@ impl DatabaseManager {
         Ok(())
     }
 
-    /// Load migration files from the migrations directory, sorted by version.
+    /// Load the compile-time embedded migration list, sorted by version.
     fn load_migrations(&self) -> Result<Vec<(i64, String, String, String)>, rusqlite::Error> {
-        let entries = fs::read_dir(&self.migrations_path)
-            .map_err(|e| sqlite_error(&format!("No migrations dir: {e}")))?;
-        let mut migrations: Vec<(i64, String, String, String)> = Vec::new();
-        for entry in entries.flatten() {
-            let filename = entry.file_name().to_string_lossy().to_string();
-            if !filename.ends_with(".sql") {
-                continue;
-            }
-            // Expect NNN_name.sql
-            let Some(stem) = filename.strip_suffix(".sql") else {
-                continue;
-            };
-            let (version_str, name) = stem.split_once('_').ok_or_else(|| {
-                sqlite_error(&format!("Invalid SQLite migration filename: {filename}."))
-            })?;
-            let version: i64 = version_str.parse().map_err(|_| {
-                sqlite_error(&format!("Invalid SQLite migration version in {filename}."))
-            })?;
-            if version < 1 {
-                return Err(sqlite_error(&format!(
-                    "Invalid SQLite migration version in {filename}."
-                )));
-            }
-            let sql = fs::read_to_string(entry.path())
-                .map_err(|e| sqlite_error(&format!("Cannot read {filename}: {e}")))?;
-            migrations.push((version, name.to_string(), filename, sql));
+        if MIGRATIONS.is_empty() {
+            return Err(sqlite_error("No SQLite migrations are embedded."));
         }
-        migrations.sort_by_key(|m| m.0);
-        if migrations.is_empty() {
-            return Err(sqlite_error(&format!(
-                "No SQLite migrations found in {}.",
-                self.migrations_path.display()
-            )));
-        }
+        let migrations = MIGRATIONS
+            .iter()
+            .map(|(version, name, filename, sql)| {
+                (
+                    *version,
+                    (*name).to_string(),
+                    (*filename).to_string(),
+                    (*sql).to_string(),
+                )
+            })
+            .collect();
         Ok(migrations)
     }
 
