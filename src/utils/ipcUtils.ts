@@ -147,12 +147,23 @@ export const send = (
       }
     })
     .catch(err => {
+      // Tauri serializes a command's `Err(ApiResponse)` into a plain object
+      // like `{ bizCode, data, message }`; stringifying it directly would
+      // render "[object Object]".
+      let bizCode = "B1000";
+      let message = "";
+      if (err && typeof err === "object") {
+        bizCode = (err as any).bizCode ?? (err as any).biz_code ?? "B1000";
+        message = (err as any).message ?? String(err);
+      } else {
+        message = String(err);
+      }
       const errHandlers = routerErrListeners.get(router.path);
       if (errHandlers && errHandlers.size > 0) {
-        errHandlers.forEach(errHandler => errHandler("B1000", String(err)));
+        errHandlers.forEach(errHandler => errHandler(bizCode, message));
       } else {
         ElMessage({
-          message: String(err),
+          message: message || "internal error.",
           type: "error"
         });
       }

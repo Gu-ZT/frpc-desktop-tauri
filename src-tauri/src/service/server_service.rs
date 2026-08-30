@@ -58,11 +58,12 @@ impl ServerService {
         Ok(new_config)
     }
 
-    pub async fn get_server_config(&self) -> Result<OpenSourceFrpcDesktopServer, BusinessError> {
+    pub async fn get_server_config(
+        &self,
+    ) -> Result<Option<OpenSourceFrpcDesktopServer>, BusinessError> {
         self.server_repo
             .find_by_id("1")
-            .map_err(|e| BusinessError::internal(format!("load config failed: {e}")))?
-            .ok_or_else(|| BusinessError::new(ResponseCode::InternalError))
+            .map_err(|e| BusinessError::internal(format!("load config failed: {e}")))
     }
 
     pub async fn has_server_config(&self) -> Result<bool, BusinessError> {
@@ -71,7 +72,10 @@ impl ServerService {
             .exists("1")
             .map_err(|e| BusinessError::internal(format!("check config failed: {e}")))?
         {
-            let config = self.get_server_config().await?;
+            let config = self
+                .get_server_config()
+                .await?
+                .ok_or_else(|| BusinessError::new(ResponseCode::InternalError))?;
             Ok(!config.server_addr.is_empty())
         } else {
             Ok(false)
@@ -106,7 +110,10 @@ impl ServerService {
         if output_path.is_empty() {
             return Ok(());
         }
-        let server = self.get_server_config().await?;
+        let server = self
+            .get_server_config()
+            .await?
+            .ok_or_else(|| BusinessError::new(ResponseCode::NotFoundVersion))?;
         let proxies = self
             .proxy_repo
             .find_all()
@@ -391,31 +398,40 @@ remotePort = {{{{ $v.Second }}}}
     }
 
     pub async fn is_silent_start(&self) -> Result<bool, BusinessError> {
-        let config = self.get_server_config().await?;
+        let config = self
+            .get_server_config()
+            .await?
+            .ok_or_else(|| BusinessError::new(ResponseCode::InternalError))?;
         Ok(config.system.silent_startup)
     }
 
     pub async fn is_auto_connect_on_startup(&self) -> Result<bool, BusinessError> {
-        let config = self.get_server_config().await?;
+        let config = self
+            .get_server_config()
+            .await?
+            .ok_or_else(|| BusinessError::new(ResponseCode::InternalError))?;
         Ok(config.system.auto_connect_on_startup)
     }
 
     pub async fn get_logger_level(&self) -> Result<String, BusinessError> {
-        let config = self.get_server_config().await?;
+        let config = self
+            .get_server_config()
+            .await?
+            .ok_or_else(|| BusinessError::new(ResponseCode::InternalError))?;
         Ok(config.log.level)
     }
 
     pub async fn get_language(&self) -> Result<String, BusinessError> {
         match self.get_server_config().await {
-            Ok(config) if !config.system.language.is_empty() => Ok(config.system.language),
+            Ok(Some(config)) if !config.system.language.is_empty() => Ok(config.system.language),
             _ => Ok(GlobalConstant::DEFAULT_LANGUAGE.to_string()),
         }
     }
 
     pub async fn save_language(&self, language: &str) -> Result<(), BusinessError> {
         let mut config = match self.get_server_config().await {
-            Ok(c) => c,
-            Err(_) => OpenSourceFrpcDesktopServer::default_server(),
+            Ok(Some(c)) => c,
+            _ => OpenSourceFrpcDesktopServer::default_server(),
         };
         config.system.language = language.to_string();
         self.save_server_config(config).await?;
@@ -426,7 +442,10 @@ remotePort = {{{{ $v.Second }}}}
         &self,
         system: FrpcSystemConfiguration,
     ) -> Result<(), BusinessError> {
-        let mut config = self.get_server_config().await?;
+        let mut config = self
+            .get_server_config()
+            .await?
+            .ok_or_else(|| BusinessError::new(ResponseCode::InternalError))?;
         config.system = system;
         self.save_server_config(config).await?;
         Ok(())

@@ -336,7 +336,11 @@ impl FrpcProcessService {
         if !self.server_service.has_server_config().await? {
             return Err(BusinessError::new(ResponseCode::NotConfig));
         }
-        let config = self.server_service.get_server_config().await?;
+        let config = self
+            .server_service
+            .get_server_config()
+            .await?
+            .ok_or_else(|| BusinessError::new(ResponseCode::NotConfig))?;
         let version = self
             .version_repo
             .find_by_github_release_id(config.frpc_version.unwrap_or(-1))
@@ -582,7 +586,11 @@ impl FrpcProcessService {
         if !self.is_running() {
             return Ok(());
         }
-        let config = self.server_service.get_server_config().await?;
+        let config = self
+            .server_service
+            .get_server_config()
+            .await?
+            .ok_or_else(|| BusinessError::new(ResponseCode::NotConfig))?;
         let version = self
             .version_repo
             .find_by_github_release_id(config.frpc_version.unwrap_or(-1))

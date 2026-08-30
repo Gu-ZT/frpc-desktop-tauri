@@ -15,6 +15,21 @@ defineComponent({
 
 // const frpcDesktopStore = useFrpcDesktopStore();
 const systemUsageStore = useSystemUsageStore();
+
+/** CPU 百分比保留两位小数。 */
+const cpuDisplay = computed(() => systemUsageStore.systemUsageCpu.toFixed(2));
+
+/** 将 MB 数值格式化为易读的 KB/MB/GB 字符串。 */
+const memoryDisplay = computed(() => {
+  const mb = systemUsageStore.systemUsageMemory.used;
+  if (mb >= 1024) {
+    return `${(mb / 1024).toFixed(2)}GB`;
+  }
+  if (mb >= 1) {
+    return `${mb.toFixed(1)}MB`;
+  }
+  return `${Math.round(mb * 1024)}KB`;
+});
 const routes = ref<Array<RouteRecordRaw>>([]);
 const guideSteps = ref({
   Home: {
@@ -153,7 +168,7 @@ onMounted(() => {
             CPU
           </p>
           <p class="text-[12px] font-bold">
-            {{ systemUsageStore.systemUsageCpu }}%
+            {{ cpuDisplay }}%
           </p>
         </div>
         <div class="flex flex-col justify-center items-center w-full">
@@ -162,7 +177,7 @@ onMounted(() => {
             内存
           </p>
           <p class="text-[12px] font-bold">
-            {{ systemUsageStore.systemUsageMemory.used }}MB
+            {{ memoryDisplay }}
           </p>
         </div>
       </div>

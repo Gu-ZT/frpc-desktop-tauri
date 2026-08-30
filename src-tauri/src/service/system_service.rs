@@ -192,8 +192,9 @@ impl SystemService {
             .process(pid)
             .ok_or_else(|| "cannot read own process info".to_string())?;
         let cpu = process.cpu_usage() as f64;
-        let used_mb = (process.memory() / 1024) as i64; // memory() returns KB on most platforms
-        let total_mb = (sys.total_memory() / 1024) as i64;
+        // process.memory() and sys.total_memory() return bytes.
+        let used_mb = (process.memory() / 1024 / 1024) as i64;
+        let total_mb = (sys.total_memory() / 1024 / 1024) as i64;
         let percentage = if total_mb > 0 {
             (used_mb as f64 / total_mb as f64) * 100.0
         } else {
