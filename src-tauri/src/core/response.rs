@@ -10,6 +10,9 @@ use super::business_error::{BusinessError, ResponseCode};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ApiResponse<T = serde_json::Value> {
+    /// Serialized as `bizCode` to match the Electron-era renderer contract
+    /// (`bizCode === "A1000"` means success).
+    #[serde(rename = "bizCode")]
     pub biz_code: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<T>,

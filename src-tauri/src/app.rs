@@ -325,7 +325,7 @@ fn start_listeners(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                         "cpu": usage.cpu,
                         "memory": {
                             "used": usage.memory.used,
-                            "percentage": 0.0
+                            "percentage": usage.memory.percentage
                         }
                     });
                     let _ = app_handle.emit(CHANNEL_WATCH_SYSTEM_USAGE, payload);

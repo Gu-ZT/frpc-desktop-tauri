@@ -186,17 +186,24 @@ impl SystemService {
     pub fn get_system_usage(&self) -> Result<SystemUsage, String> {
         let mut sys = System::new();
         sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
+        sys.refresh_memory();
         let pid = sysinfo::Pid::from_u32(std::process::id());
         let process = sys
             .process(pid)
             .ok_or_else(|| "cannot read own process info".to_string())?;
         let cpu = process.cpu_usage() as f64;
         let used_mb = (process.memory() / 1024) as i64; // memory() returns KB on most platforms
+        let total_mb = (sys.total_memory() / 1024) as i64;
+        let percentage = if total_mb > 0 {
+            (used_mb as f64 / total_mb as f64) * 100.0
+        } else {
+            0.0
+        };
         Ok(SystemUsage {
             cpu,
             memory: SystemUsageMemory {
                 used: used_mb,
-                percentage: 0.0,
+                percentage,
             },
         })
     }

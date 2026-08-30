@@ -6,8 +6,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FrpcProcessStatus {
     pub running: bool,
+    #[serde(rename = "lastStartTime")]
     pub last_start_time: i64,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "connectionError", skip_serializing_if = "Option::is_none")]
     pub connection_error: Option<String>,
 }
 
@@ -28,6 +29,7 @@ pub struct SystemUsageMemory {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DownloadProgress {
     pub percent: f64,
+    #[serde(rename = "githubReleaseId")]
     pub github_release_id: i64,
     pub completed: bool,
 }
